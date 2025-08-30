@@ -1,15 +1,25 @@
 {
-  "name": "my-v0-project",
+  "name": "polkadot-raffle-dapp",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "next build",
+    "compile-contract": "cargo contract build --manifest-path contracts/Cargo.toml",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "test-contract": "cargo contract test --manifest-path contracts/Cargo.toml"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@polkadot/api": "latest",
+    "@polkadot/api-contract": "latest",
+    "@polkadot/extension-dapp": "latest",
+    "@polkadot/extension-inject": "latest",
+    "@polkadot/keyring": "^12.6.2",
+    "@polkadot/types": "^12.3.1",
+    "@polkadot/util": "^12.6.2",
+    "@polkadot/util-crypto": "^12.6.2",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",
@@ -57,8 +67,8 @@
     "react-dom": "^19",
     "react-hook-form": "^7.60.0",
     "react-resizable-panels": "^2.1.7",
-    "recharts": "2.15.4",
-    "sonner": "^1.7.4",
+    "recharts": "latest",
+    "sonner": "latest",
     "svelte": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",

@@ -191,11 +191,116 @@ export function useRaffleContract() {
     [api, selectedAccount],
   )
 
+  const getAllRaffles = useCallback(async (): Promise<(RaffleInfo & { id: number })[]> => {
+    if (!api) return []
+
+    try {
+      const contract = await createContractInstance(api)
+      if (!contract) return []
+
+      // Get total number of raffles
+      const { result: countResult, output: countOutput } = await contract.query.getRaffleCount(
+        selectedAccount?.address || "",
+        { gasLimit: -1, storageDepositLimit: null },
+      )
+
+      if (!countResult.isOk || !countOutput) return []
+
+      const totalRaffles = countOutput.toNumber()
+      const raffles: (RaffleInfo & { id: number })[] = []
+
+      // Get info for each raffle
+      for (let i = 0; i < totalRaffles; i++) {
+        const raffleInfo = await getRaffleInfo(i)
+        if (raffleInfo) {
+          raffles.push({ ...raffleInfo, id: i })
+        }
+      }
+
+      return raffles
+    } catch (error) {
+      console.error("Error getting all raffles:", error)
+      return []
+    }
+  }, [api, selectedAccount, getRaffleInfo])
+
+  const getUserTickets = useCallback(
+    async (raffleId: number): Promise<number> => {
+      if (!api || !selectedAccount) return 0
+
+      try {
+        const contract = await createContractInstance(api)
+        if (!contract) return 0
+
+        const { result, output } = await contract.query.getUserTickets(
+          selectedAccount.address,
+          { gasLimit: -1, storageDepositLimit: null },
+          raffleId,
+          selectedAccount.address,
+        )
+
+        if (result.isOk && output) {
+          return output.toNumber()
+        }
+        return 0
+      } catch (error) {
+        console.error("Error getting user tickets:", error)
+        return 0
+      }
+    },
+    [api, selectedAccount],
+  )
+
+  const claimPrize = useCallback(
+    async (raffleId: number) => {
+      if (!api || !selectedAccount) {
+        toast.error("Please connect your wallet first")
+        return false
+      }
+
+      setIsLoading(true)
+      try {
+        const contract = await createContractInstance(api)
+        if (!contract) {
+          throw new Error("Contract not available")
+        }
+
+        const signer = await getSigner()
+
+        const { gasRequired } = await contract.query.claimPrize(
+          selectedAccount.address,
+          { gasLimit: -1, storageDepositLimit: null },
+          raffleId,
+        )
+
+        const tx = contract.tx.claimPrize({ gasLimit: gasRequired, storageDepositLimit: null }, raffleId)
+
+        await tx.signAndSend(selectedAccount.address, { signer }, (result) => {
+          if (result.status.isInBlock) {
+            toast.success("Prize claimed successfully!")
+          }
+        })
+
+        return true
+      } catch (error) {
+        console.error("Error claiming prize:", error)
+        toast.error("Failed to claim prize")
+        return false
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [api, selectedAccount, getSigner],
+  )
+
   return {
     createRaffle,
     buyTicket,
     closeRaffle,
     getRaffleInfo,
+    getAllRaffles,
+    getUserTickets,
+    claimPrize,
     isLoading,
   }
 }

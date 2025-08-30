@@ -14,7 +14,52 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Wallet, Copy, CheckCircle, Ticket, Plus, Settings, Trophy, Shield, Zap, Eye } from "lucide-react"
+import { Wallet, Copy, CheckCircle, Ticket, Plus, Settings, Trophy, Shield, Zap, Eye, Sparkles } from "lucide-react"
+import { Connection } from "@solana/web3.js"
+
+const createConfetti = () => {
+  const colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#feca57", "#ff9ff3", "#54a0ff"]
+  const confettiCount = 50
+
+  for (let i = 0; i < confettiCount; i++) {
+    const confetti = document.createElement("div")
+    confetti.style.position = "fixed"
+    confetti.style.left = Math.random() * 100 + "vw"
+    confetti.style.top = "-10px"
+    confetti.style.width = "10px"
+    confetti.style.height = "10px"
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
+    confetti.style.borderRadius = "50%"
+    confetti.style.pointerEvents = "none"
+    confetti.style.zIndex = "9999"
+    confetti.style.animation = `confetti-fall ${Math.random() * 3 + 2}s linear forwards`
+
+    document.body.appendChild(confetti)
+
+    setTimeout(() => {
+      confetti.remove()
+    }, 5000)
+  }
+}
+
+const playSuccessSound = () => {
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+  const oscillator = audioContext.createOscillator()
+  const gainNode = audioContext.createGain()
+
+  oscillator.connect(gainNode)
+  gainNode.connect(audioContext.destination)
+
+  oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime) // C5
+  oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1) // E5
+  oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2) // G5
+
+  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+
+  oscillator.start(audioContext.currentTime)
+  oscillator.stop(audioContext.currentTime + 0.5)
+}
 
 // Phantom wallet types
 interface PhantomProvider {
@@ -38,7 +83,8 @@ interface Raffle {
   stakePercent: number
   feePercent: number
   totalRaised: number
-  winner?: string
+  participants: string[]
+  winner: string | null
 }
 
 // NFT ticket interface
@@ -60,58 +106,40 @@ const mockRaffles: Raffle[] = [
     ticketsIssued: 45,
     maxTickets: 100,
     organizer: "8sj...39F",
-    isActive: true,
+    isActive: true, // Ensuring raffle is active
     stakePercent: 10,
     feePercent: 5,
     totalRaised: 4.5,
+    participants: [],
+    winner: null,
   },
   {
     id: "2",
-    title: "Rifa Gaming Setup",
+    title: "Rifa Tech UTN",
     ticketPrice: 0.05,
-    ticketsIssued: 78,
-    maxTickets: 150,
-    organizer: "9kL...42A",
-    isActive: true,
+    ticketsIssued: 23,
+    maxTickets: 50,
+    organizer: "9kL...28A",
+    isActive: true, // Ensuring raffle is active
     stakePercent: 15,
-    feePercent: 3,
-    totalRaised: 3.9,
+    feePercent: 5,
+    totalRaised: 1.15,
+    participants: [],
+    winner: null,
   },
   {
     id: "3",
-    title: "Rifa Crypto Bundle",
+    title: "Rifa Blockchain FRC",
     ticketPrice: 0.2,
-    ticketsIssued: 23,
-    maxTickets: 50,
-    organizer: "7mN...18C",
-    isActive: true,
-    stakePercent: 8,
-    feePercent: 7,
-    totalRaised: 4.6,
-  },
-  {
-    id: "4",
-    title: "Rifa NFT Collection",
-    ticketPrice: 0.15,
-    ticketsIssued: 67,
-    maxTickets: 80,
-    organizer: "5pQ...91D",
-    isActive: true,
+    ticketsIssued: 12,
+    maxTickets: 30,
+    organizer: "7mN...45B",
+    isActive: true, // Ensuring raffle is active
     stakePercent: 12,
-    feePercent: 4,
-    totalRaised: 10.05,
-  },
-  {
-    id: "5",
-    title: "Rifa Tech Gadgets",
-    ticketPrice: 0.08,
-    ticketsIssued: 134,
-    maxTickets: 200,
-    organizer: "3rT...55E",
-    isActive: true,
-    stakePercent: 20,
-    feePercent: 6,
-    totalRaised: 10.72,
+    feePercent: 5,
+    totalRaised: 2.4,
+    participants: [],
+    winner: null,
   },
 ]
 
@@ -120,6 +148,8 @@ declare global {
     solana?: PhantomProvider
   }
 }
+
+const connection = new Connection("https://api.mainnet-beta.solana.com") // Replace with your Solana RPC endpoint
 
 export default function SolanaWalletApp() {
   const [wallet, setWallet] = useState<PhantomProvider | null>(null)
@@ -147,6 +177,59 @@ export default function SolanaWalletApp() {
   const [showWinnerModal, setShowWinnerModal] = useState(false)
   const [selectedWinner, setSelectedWinner] = useState<{ raffle: Raffle; winner: string } | null>(null)
   const [showLandingPage, setShowLandingPage] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [purchaseStep, setPurchaseStep] = useState<"confirm" | "processing" | "success">("confirm")
+
+  useEffect(() => {
+    const style = document.createElement("style")
+    style.textContent = `
+      @keyframes confetti-fall {
+        0% {
+          transform: translateY(-10px) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(100vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes pulse-success {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+      
+      @keyframes slide-up {
+        0% { transform: translateY(20px); opacity: 0; }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+      
+      .animate-pulse-success {
+        animation: pulse-success 2s ease-in-out infinite;
+      }
+      
+      .animate-slide-up {
+        animation: slide-up 0.3s ease-out forwards;
+      }
+      
+      .loading-dots::after {
+        content: '';
+        animation: loading-dots 1.5s infinite;
+      }
+      
+      @keyframes loading-dots {
+        0%, 20% { content: ''; }
+        40% { content: '.'; }
+        60% { content: '..'; }
+        80%, 100% { content: '...'; }
+      }
+    `
+    document.head.appendChild(style)
+
+    return () => {
+      document.head.removeChild(style)
+    }
+  }, [])
 
   useEffect(() => {
     // Check if Phantom wallet is available
@@ -222,57 +305,65 @@ export default function SolanaWalletApp() {
     return `${address.slice(0, 4)}...${address.slice(-4)}`
   }
 
-  const buyTicket = async (raffleId: string) => {
-    if (!isConnected) {
-      alert("Por favor conecta tu wallet primero")
+  const buyTicket = async (raffle: Raffle) => {
+    console.log("[v0] Buy ticket clicked - isConnected:", isConnected)
+    console.log("[v0] Raffle active:", raffle.isActive)
+    console.log("[v0] Tickets available:", raffle.maxTickets - raffle.ticketsIssued)
+
+    if (!isConnected || !wallet) {
+      alert("Conecta tu wallet primero")
       return
     }
 
-    const raffle = mockRaffles.find((r) => r.id === raffleId)
-    if (raffle) {
-      setSelectedRaffle(raffle)
-      setShowPurchaseModal(true)
-    }
+    setSelectedRaffle(raffle)
+    setShowPurchaseModal(true)
   }
 
   const confirmPurchase = async () => {
     if (!selectedRaffle) return
 
     setIsPurchasing(true)
+    setPurchaseStep("processing")
 
     try {
-      // Simulate Solana transaction delay
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 800)) // Wallet confirmation
+      setPurchaseStep("processing")
+      await new Promise((resolve) => setTimeout(resolve, 1200)) // Transaction processing
 
-      // Generate ticket number and QR code
-      const ticketNumber = Math.floor(Math.random() * 1000000)
-      const qrData = `AVEIT-TICKET-${selectedRaffle.id}-${ticketNumber}`
-
-      // Create new NFT ticket
+      // Mock transaction
       const newTicket: NFTTicket = {
         id: `ticket-${Date.now()}`,
         raffleId: selectedRaffle.id,
         raffleTitle: selectedRaffle.title,
-        ticketNumber,
+        ticketNumber: (selectedRaffle.ticketsIssued + 1).toString().padStart(4, "0"),
         purchaseDate: new Date().toLocaleDateString(),
-        qrCode: qrData,
+        qrCode: `${selectedRaffle.id}-${Date.now()}`,
       }
 
-      // Add to user tickets
+      // Update raffle data
+      const updatedRaffles = mockRaffles.map((raffle) =>
+        raffle.id === selectedRaffle.id
+          ? {
+              ...raffle,
+              ticketsIssued: raffle.ticketsIssued + 1,
+              totalRaised: raffle.totalRaised + raffle.ticketPrice,
+            }
+          : raffle,
+      )
+
       setUserTickets((prev) => [...prev, newTicket])
 
-      // Update raffle tickets issued (mock)
-      const raffleIndex = mockRaffles.findIndex((r) => r.id === selectedRaffle.id)
-      if (raffleIndex !== -1) {
-        mockRaffles[raffleIndex].ticketsIssued += 1
-        mockRaffles[raffleIndex].totalRaised += selectedRaffle.ticketPrice
-      }
+      setPurchaseStep("success")
+      playSuccessSound()
+      createConfetti()
 
-      setShowPurchaseModal(false)
-      setShowSuccessModal(true)
+      setTimeout(() => {
+        setShowPurchaseModal(false)
+        setShowSuccessModal(true)
+        setPurchaseStep("confirm")
+      }, 1500)
     } catch (error) {
-      console.error("[v0] Purchase failed:", error)
-      alert("Error en la transacción. Intenta nuevamente.")
+      console.error("Purchase failed:", error)
     } finally {
       setIsPurchasing(false)
     }
@@ -311,6 +402,8 @@ export default function SolanaWalletApp() {
         stakePercent: Number.parseInt(newRaffle.stakePercent),
         feePercent: Number.parseInt(newRaffle.feePercent),
         totalRaised: 0,
+        participants: [],
+        winner: null,
       }
 
       mockRaffles.push(raffleData)
@@ -430,18 +523,19 @@ export default function SolanaWalletApp() {
           {/* Hero Section */}
           <section className="py-20 text-center">
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance">
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary via-blue-600 to-green-600 bg-clip-text text-transparent mb-6 text-balance animate-slide-up">
                 Rifa Transparente en Blockchain
               </h1>
-              <p className="text-xl md:text-2xl text-muted-foreground mb-12 text-pretty max-w-3xl mx-auto leading-relaxed">
+              <p className="text-xl md:text-2xl text-muted-foreground mb-12 text-pretty max-w-3xl mx-auto leading-relaxed animate-slide-up">
                 Un proyecto de AVEIT que reemplaza la certificación de Lotería con un sistema descentralizado en Solana.
               </p>
 
               <Button
                 onClick={goToDashboard}
                 size="lg"
-                className="bg-primary hover:bg-primary/90 text-lg px-8 py-6 rounded-xl"
+                className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white px-8 py-6 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-slide-up"
               >
+                <Sparkles className="w-5 h-5 mr-2" />
                 Probar Demo
               </Button>
             </div>
@@ -450,10 +544,9 @@ export default function SolanaWalletApp() {
           {/* Features Section */}
           <section className="py-16">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {/* Feature 1: NFT Tickets */}
-              <Card className="text-center hover:shadow-lg transition-shadow">
+              <Card className="text-center hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 animate-slide-up">
                 <CardHeader className="pb-4">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                     <Ticket className="w-8 h-8 text-primary" />
                   </div>
                   <CardTitle className="text-xl">Boletas tokenizadas como NFTs</CardTitle>
@@ -466,10 +559,12 @@ export default function SolanaWalletApp() {
                 </CardContent>
               </Card>
 
-              {/* Feature 2: Transparent Stake */}
-              <Card className="text-center hover:shadow-lg transition-shadow">
+              <Card
+                className="text-center hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 animate-slide-up"
+                style={{ animationDelay: "0.1s" }}
+              >
                 <CardHeader className="pb-4">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Shield className="w-8 h-8 text-green-600" />
                   </div>
                   <CardTitle className="text-xl">Stake como garantía transparente</CardTitle>
@@ -482,10 +577,12 @@ export default function SolanaWalletApp() {
                 </CardContent>
               </Card>
 
-              {/* Feature 3: Auditable Draw */}
-              <Card className="text-center hover:shadow-lg transition-shadow">
+              <Card
+                className="text-center hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 animate-slide-up"
+                style={{ animationDelay: "0.2s" }}
+              >
                 <CardHeader className="pb-4">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Eye className="w-8 h-8 text-blue-600" />
                   </div>
                   <CardTitle className="text-xl">Sorteo auditable en la blockchain</CardTitle>
@@ -554,12 +651,19 @@ export default function SolanaWalletApp() {
 
           {/* Raffle Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {mockRaffles.map((raffle) => (
-              <Card key={raffle.id} className="hover:shadow-lg transition-shadow">
+            {mockRaffles.map((raffle, index) => (
+              <Card
+                key={raffle.id}
+                className="hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 animate-slide-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{raffle.title}</CardTitle>
-                    <Badge variant={raffle.isActive ? "secondary" : "default"} className="bg-accent/20">
+                    <Badge
+                      variant={raffle.isActive ? "secondary" : "default"}
+                      className={`${raffle.isActive ? "bg-green-100 text-green-800 animate-pulse-success" : "bg-accent/20"}`}
+                    >
                       <Ticket className="w-3 h-3 mr-1" />
                       {raffle.isActive ? "Activa" : "Cerrada"}
                     </Badge>
@@ -567,7 +671,7 @@ export default function SolanaWalletApp() {
                   <CardDescription>
                     Organizado por {raffle.organizer}
                     {!raffle.isActive && raffle.winner && (
-                      <div className="flex items-center mt-1 text-green-600">
+                      <div className="flex items-center mt-1 text-green-600 animate-pulse-success">
                         <Trophy className="w-3 h-3 mr-1" />
                         Ganador: {raffle.winner}
                       </div>
@@ -578,7 +682,7 @@ export default function SolanaWalletApp() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Precio por boleta:</span>
-                      <span className="font-semibold">{raffle.ticketPrice} SOL</span>
+                      <span className="font-semibold text-primary">{raffle.ticketPrice} SOL</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Boletas vendidas:</span>
@@ -586,23 +690,25 @@ export default function SolanaWalletApp() {
                         {raffle.ticketsIssued} / {raffle.maxTickets}
                       </span>
                     </div>
-                    <div className="w-full bg-secondary rounded-full h-2">
+                    <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
                       <div
-                        className="bg-primary h-2 rounded-full transition-all"
+                        className="bg-gradient-to-r from-primary to-blue-600 h-3 rounded-full transition-all duration-1000 ease-out"
                         style={{ width: `${(raffle.ticketsIssued / raffle.maxTickets) * 100}%` }}
                       ></div>
                     </div>
                   </div>
                   <Button
-                    onClick={() => buyTicket(raffle.id)}
-                    className="w-full bg-primary hover:bg-primary/90"
+                    onClick={() => buyTicket(raffle)}
+                    className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-semibold py-2 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
                     disabled={!isConnected || raffle.ticketsIssued >= raffle.maxTickets || !raffle.isActive}
                   >
-                    {!raffle.isActive
-                      ? "Cerrada"
-                      : raffle.ticketsIssued >= raffle.maxTickets
-                        ? "Agotado"
-                        : "Comprar Boleta"}
+                    {!isConnected
+                      ? "Conectar Wallet"
+                      : !raffle.isActive
+                        ? "Cerrada"
+                        : raffle.ticketsIssued >= raffle.maxTickets
+                          ? "Agotado"
+                          : "Comprar Boleta"}
                   </Button>
                 </CardContent>
               </Card>
@@ -760,23 +866,37 @@ export default function SolanaWalletApp() {
         </main>
       )}
 
-      {/* Purchase Confirmation Modal */}
       <Dialog open={showPurchaseModal} onOpenChange={setShowPurchaseModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirmar Compra</DialogTitle>
-            <DialogDescription>Estás a punto de comprar una boleta para la siguiente rifa:</DialogDescription>
+            <DialogTitle className="flex items-center space-x-2">
+              {purchaseStep === "processing" && (
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              )}
+              {purchaseStep === "success" && <CheckCircle className="w-5 h-5 text-green-500" />}
+              {purchaseStep === "confirm" && <Ticket className="w-5 h-5 text-primary" />}
+              <span>
+                {purchaseStep === "confirm" && "Confirmar Compra"}
+                {purchaseStep === "processing" && "Procesando Transacción"}
+                {purchaseStep === "success" && "¡Compra Exitosa!"}
+              </span>
+            </DialogTitle>
+            <DialogDescription>
+              {purchaseStep === "confirm" && "Estás a punto de comprar una boleta para la siguiente rifa:"}
+              {purchaseStep === "processing" && "Confirmando transacción en la blockchain..."}
+              {purchaseStep === "success" && "Tu boleta NFT ha sido generada exitosamente."}
+            </DialogDescription>
           </DialogHeader>
 
-          {selectedRaffle && (
-            <div className="space-y-4">
+          {selectedRaffle && purchaseStep === "confirm" && (
+            <div className="space-y-4 animate-slide-up">
               <Card>
                 <CardContent className="pt-4">
                   <div className="space-y-2">
                     <h3 className="font-semibold">{selectedRaffle.title}</h3>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Precio:</span>
-                      <span className="font-semibold">{selectedRaffle.ticketPrice} SOL</span>
+                      <span className="font-semibold text-primary">{selectedRaffle.ticketPrice} SOL</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Boletas disponibles:</span>
@@ -786,22 +906,46 @@ export default function SolanaWalletApp() {
                 </CardContent>
               </Card>
 
-              <div className="bg-accent/20 p-4 rounded-lg">
+              <div className="bg-gradient-to-r from-accent/20 to-primary/10 p-4 rounded-lg border border-primary/20">
                 <p className="text-sm text-muted-foreground">
-                  Al confirmar, se debitarán <strong>{selectedRaffle.ticketPrice} SOL</strong> de tu wallet y recibirás
-                  un NFT de boleta único.
+                  Al confirmar, se debitarán <strong className="text-primary">{selectedRaffle.ticketPrice} SOL</strong>{" "}
+                  de tu wallet y recibirás un NFT de boleta único.
                 </p>
               </div>
             </div>
           )}
 
+          {purchaseStep === "processing" && (
+            <div className="text-center space-y-4 animate-slide-up">
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p className="text-sm text-muted-foreground loading-dots">Procesando transacción</p>
+            </div>
+          )}
+
+          {purchaseStep === "success" && (
+            <div className="text-center space-y-4 animate-slide-up">
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg">
+                <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500 animate-pulse-success" />
+                <p className="font-semibold text-green-600">¡Boleta NFT Creada!</p>
+              </div>
+            </div>
+          )}
+
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setShowPurchaseModal(false)} disabled={isPurchasing}>
-              Cancelar
-            </Button>
-            <Button onClick={confirmPurchase} disabled={isPurchasing} className="bg-primary hover:bg-primary/90">
-              {isPurchasing ? "Procesando..." : "Confirmar Compra"}
-            </Button>
+            {purchaseStep === "confirm" && (
+              <>
+                <Button variant="outline" onClick={() => setShowPurchaseModal(false)} disabled={isPurchasing}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={confirmPurchase}
+                  disabled={isPurchasing}
+                  className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90"
+                >
+                  {isPurchasing ? "Procesando..." : "Confirmar Compra"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

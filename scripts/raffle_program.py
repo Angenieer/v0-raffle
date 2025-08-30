@@ -11,7 +11,7 @@ class Raffle:
     fee_percent: u8
     stake_percent: u8
     tickets_sold: u32
-    participants: Array[Pubkey, 1000]  # Lista de participantes (máximo 1000)
+    participants: Array[Pubkey, 10000]  # Lista de participantes (máximo 10,000)
     winner: Pubkey
     is_closed: bool
     total_stake: u64
@@ -49,11 +49,11 @@ def create_raffle(
     """Crea una nueva rifa"""
     
     # Validaciones
-    assert max_tickets > 0, "Max tickets debe ser mayor a 0"
-    assert ticket_price > 0, "Precio del ticket debe ser mayor a 0"
-    assert fee_percent <= 100, "Fee percent no puede ser mayor a 100"
-    assert stake_percent <= 100, "Stake percent no puede ser mayor a 100"
-    assert fee_percent + stake_percent <= 100, "Fee + stake no puede ser mayor a 100"
+    assert max_tickets > 0 and max_tickets <= 10000, "Max tickets entre 1 y 10,000"  # Cambiar límite máximo
+    assert ticket_price >= 1000000, "Precio mínimo: 0.001 SOL"  # Cambiar precio mínimo (en lamports)
+    assert fee_percent <= 20, "Fee máximo: 20%"  # Cambiar fee máximo
+    assert stake_percent <= 50, "Stake máximo: 50%"  # Cambiar stake máximo
+    assert fee_percent + stake_percent <= 70, "Fee + stake máximo: 70%"  # Cambiar suma máxima
     
     # Inicializar la cuenta de la rifa
     raffle = raffle.init(
@@ -208,6 +208,24 @@ def test_raffle_flow():
     print("4. Cerrar rifa y seleccionar ganador")
     print("5. Reclamar premio")
     print("\nEste contrato está listo para ser compilado con Seahorse!")
+
+@instruction
+def update_raffle_params(
+    raffle: Raffle,
+    organizer: Signer,
+    new_max_tickets: u32,
+    new_ticket_price: u64
+):
+    """Permite al organizador modificar parámetros antes de que se vendan tickets"""
+    
+    assert raffle.organizer == organizer.key(), "Solo el organizador puede modificar"
+    assert raffle.tickets_sold == 0, "No se puede modificar después de vender tickets"
+    assert not raffle.is_closed, "La rifa ya está cerrada"
+    
+    raffle.max_tickets = new_max_tickets
+    raffle.ticket_price = new_ticket_price
+    
+    print(f"Rifa actualizada - Max tickets: {new_max_tickets}, Precio: {new_ticket_price}")
 
 if __name__ == "__main__":
     test_raffle_flow()

@@ -6,73 +6,76 @@
 :root {
   --background: oklch(1 0 0); /* #ffffff */
   --foreground: oklch(0.25 0 0); /* #374151 */
-  --card: oklch(0.98 0.02 142); /* #f0fdf4 light green */
+  /* Enhanced AVEIT color scheme with more celeste and blue variations */
+  --card: oklch(0.98 0.03 200); /* #f0f8ff very light celeste */
   --card-foreground: oklch(0.25 0 0); /* #374151 */
   --popover: oklch(1 0 0); /* #ffffff */
   --popover-foreground: oklch(0.25 0 0); /* #374151 */
-  --primary: oklch(0.45 0.15 142); /* #15803d green-700 */
+  --primary: oklch(0.35 0.18 220); /* #1e40af deeper AVEIT navy blue */
   --primary-foreground: oklch(1 0 0); /* #ffffff */
-  --secondary: oklch(0.75 0.15 110); /* #84cc16 light green accent */
-  --secondary-foreground: oklch(1 0 0); /* #ffffff */
-  --muted: oklch(0.98 0.02 142); /* #f0fdf4 */
-  --muted-foreground: oklch(0.25 0 0); /* #374151 */
-  --accent: oklch(0.75 0.15 110); /* #84cc16 */
+  --secondary: oklch(0.75 0.15 200); /* #60a5fa bright celeste */
+  --secondary-foreground: oklch(0.08 0 0); /* #1f2937 dark text */
+  --muted: oklch(0.96 0.04 200); /* #e0f2fe light celeste background */
+  --muted-foreground: oklch(0.35 0.05 220); /* #475569 blue-gray text */
+  --accent: oklch(0.65 0.18 200); /* #0ea5e9 vibrant celeste accent */
   --accent-foreground: oklch(1 0 0); /* #ffffff */
+  /* End enhanced AVEIT colors */
   --destructive: oklch(0.55 0.22 25); /* #dc2626 */
   --destructive-foreground: oklch(1 0 0); /* #ffffff */
-  --border: oklch(0.92 0 0); /* #e5e7eb */
-  --input: oklch(0.98 0.02 142); /* #f0fdf4 */
-  --ring: oklch(0.45 0.15 142 / 0.5); /* green ring with opacity */
-  --chart-1: oklch(0.45 0.15 142); /* #15803d */
-  --chart-2: oklch(0.75 0.15 110); /* #84cc16 */
-  --chart-3: oklch(0.55 0.22 25); /* #dc2626 */
-  --chart-4: oklch(0.65 0.18 35); /* #f97316 */
-  --chart-5: oklch(0.55 0.18 250); /* #3b82f6 */
+  --border: oklch(0.9 0.03 200); /* #e1f5fe light celeste border */
+  --input: oklch(0.98 0.03 200); /* #f0f8ff light celeste input */
+  --ring: oklch(0.65 0.18 200 / 0.5); /* celeste ring with opacity */
+  --chart-1: oklch(0.35 0.18 220); /* #1e40af AVEIT navy */
+  --chart-2: oklch(0.65 0.18 200); /* #0ea5e9 vibrant celeste */
+  --chart-3: oklch(0.75 0.15 200); /* #60a5fa bright celeste */
+  --chart-4: oklch(0.45 0.15 210); /* #2563eb medium blue */
+  --chart-5: oklch(0.85 0.12 190); /* #7dd3fc very light celeste */
   --radius: 0.5rem; /* Consistent rounded corners */
   --sidebar: oklch(1 0 0); /* #ffffff */
   --sidebar-foreground: oklch(0.25 0 0); /* #374151 */
-  --sidebar-primary: oklch(0.98 0.02 142); /* #f0fdf4 */
-  --sidebar-primary-foreground: oklch(0.25 0 0); /* #374151 */
-  --sidebar-accent: oklch(0.75 0.15 110); /* #84cc16 */
+  --sidebar-primary: oklch(0.96 0.04 200); /* #e0f2fe light celeste */
+  --sidebar-primary-foreground: oklch(0.35 0.05 220); /* #475569 */
+  --sidebar-accent: oklch(0.65 0.18 200); /* #0ea5e9 celeste accent */
   --sidebar-accent-foreground: oklch(1 0 0); /* #ffffff */
-  --sidebar-border: oklch(0.92 0 0); /* #e5e7eb */
-  --sidebar-ring: oklch(0.45 0.15 142 / 0.5); /* green ring */
+  --sidebar-border: oklch(0.9 0.03 200); /* #e1f5fe */
+  --sidebar-ring: oklch(0.65 0.18 200 / 0.5); /* celeste ring */
 }
 
 .dark {
-  /* Updated dark mode colors to maintain green theme consistency */
+  /* Enhanced dark mode with more celeste and blue variations */
   --background: oklch(0.08 0 0); /* Dark background */
   --foreground: oklch(0.95 0 0); /* Light text */
-  --card: oklch(0.12 0.02 142); /* Dark green card */
+  --card: oklch(0.12 0.03 220); /* Dark blue card with slight celeste tint */
   --card-foreground: oklch(0.95 0 0); /* Light text on cards */
   --popover: oklch(0.08 0 0); /* Dark popover */
   --popover-foreground: oklch(0.95 0 0); /* Light text in popovers */
-  --primary: oklch(0.55 0.15 142); /* Lighter green for dark mode */
+  --primary: oklch(0.65 0.18 200); /* Bright celeste for dark mode */
   --primary-foreground: oklch(0.08 0 0); /* Dark text on primary */
-  --secondary: oklch(0.18 0.02 142); /* Dark secondary */
+  --secondary: oklch(0.45 0.15 210); /* Medium blue secondary */
   --secondary-foreground: oklch(0.95 0 0); /* Light text on secondary */
-  --muted: oklch(0.18 0.02 142); /* Dark muted */
-  --muted-foreground: oklch(0.65 0 0); /* Muted text */
-  --accent: oklch(0.75 0.15 110); /* Keep accent bright */
+  --muted: oklch(0.15 0.03 220); /* Dark blue muted with celeste hint */
+  --muted-foreground: oklch(0.75 0.05 200); /* Light celeste muted text */
+  --accent: oklch(0.75 0.15 200); /* Bright celeste accent */
   --accent-foreground: oklch(0.08 0 0); /* Dark text on accent */
+  /* End enhanced dark mode colors */
   --destructive: oklch(0.45 0.18 25); /* Darker destructive */
   --destructive-foreground: oklch(0.95 0 0); /* Light text */
-  --border: oklch(0.18 0.02 142); /* Dark border */
-  --input: oklch(0.18 0.02 142); /* Dark input */
-  --ring: oklch(0.55 0.15 142 / 0.5); /* Green ring */
-  --chart-1: oklch(0.55 0.15 142); /* Lighter green for charts */
-  --chart-2: oklch(0.75 0.15 110); /* Light green accent */
-  --chart-3: oklch(0.45 0.18 25); /* Dark red */
-  --chart-4: oklch(0.55 0.18 35); /* Dark orange */
-  --chart-5: oklch(0.55 0.18 250); /* Dark blue */
-  --sidebar: oklch(0.12 0.02 142); /* Dark sidebar */
+  --border: oklch(0.18 0.03 220); /* Dark blue border with celeste tint */
+  --input: oklch(0.15 0.03 220); /* Dark blue input */
+  --ring: oklch(0.65 0.18 200 / 0.5); /* Celeste ring */
+  --chart-1: oklch(0.65 0.18 200); /* Bright celeste for charts */
+  --chart-2: oklch(0.75 0.15 200); /* Light celeste */
+  --chart-3: oklch(0.45 0.15 210); /* Medium blue */
+  --chart-4: oklch(0.55 0.18 220); /* Navy blue */
+  --chart-5: oklch(0.85 0.12 190); /* Very light celeste */
+  --sidebar: oklch(0.12 0.03 220); /* Dark blue sidebar */
   --sidebar-foreground: oklch(0.95 0 0); /* Light sidebar text */
-  --sidebar-primary: oklch(0.55 0.15 142); /* Green sidebar primary */
+  --sidebar-primary: oklch(0.65 0.18 200); /* Celeste sidebar primary */
   --sidebar-primary-foreground: oklch(0.08 0 0); /* Dark text */
-  --sidebar-accent: oklch(0.18 0.02 142); /* Dark sidebar accent */
-  --sidebar-accent-foreground: oklch(0.95 0 0); /* Light text */
-  --sidebar-border: oklch(0.18 0.02 142); /* Dark border */
-  --sidebar-ring: oklch(0.55 0.15 142 / 0.5); /* Green ring */
+  --sidebar-accent: oklch(0.15 0.03 220); /* Dark blue sidebar accent */
+  --sidebar-accent-foreground: oklch(0.75 0.15 200); /* Light celeste text */
+  --sidebar-border: oklch(0.18 0.03 220); /* Dark blue border */
+  --sidebar-ring: oklch(0.65 0.18 200 / 0.5); /* Celeste ring */
 }
 
 @theme inline {

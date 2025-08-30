@@ -1,7 +1,7 @@
 "use client"
 
-import { Header } from "../components/header"
+import { useCreateRaffle } from "../hooks/use-raffle-contract"
 
 export default function SyntheticV0PageForDeployment() {
-  return <Header />
+  return <useCreateRaffle />
 }
